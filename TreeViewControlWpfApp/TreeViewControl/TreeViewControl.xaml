@@ -1,0 +1,247 @@
+﻿<UserControl x:Class="TreeViewControlWpfApp.TreeViewControl.TreeViewControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+             xmlns:treeViewControl="clr-namespace:TreeViewControlWpfApp.TreeViewControl"
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="1200">
+    <UserControl.Resources>
+
+        <treeViewControl:ObjectToTypeConverter x:Key="ObjectToTypeConv" />
+
+        <BitmapImage x:Key="IconFolderOpen"   UriSource="pack://application:,,,/TreeViewControl/Icons/OpenFolder.ico"/>
+        <BitmapImage x:Key="IconFolderClosed" UriSource="pack://application:,,,/TreeViewControl/Icons/CloseFolder.ico"/>
+
+        <Style x:Key="IconImageStyle" TargetType="Image">
+            <Setter Property="MaxWidth" Value="40"/>
+            <Setter Property="MaxHeight" Value="40"/>
+        </Style>
+        
+        <Style x:Key="ToggleButtonStyle" TargetType="{x:Type ToggleButton}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Image x:Name="image" Style="{StaticResource IconImageStyle}"/>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="image" Property="Source" Value="{Binding Source={StaticResource IconFolderOpen}, Mode=OneTime}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter TargetName="image" Property="Source" Value="{Binding Source={StaticResource IconFolderClosed}, Mode=OneTime}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TreeViewStyle" TargetType="{x:Type TreeViewItem}">
+
+            <EventSetter Event="DragOver"  Handler="TreeView_DragOver"/>
+            <EventSetter Event="Drop" Handler="TreeView_Drop"/>
+            <EventSetter Event="PreviewMouseMove" Handler="TreeView_PreviewMouseMove"/>
+            <EventSetter Event="PreviewMouseDown" Handler="TreeView_PreviewMouseDown"/>
+
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TreeViewItem}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+
+                            <ToggleButton Grid.Row="0" Grid.Column="0" 
+                                          x:Name="PartExpander" 
+                                          Style="{StaticResource ToggleButtonStyle}" 
+                                          IsChecked="{Binding Path=IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" 
+                                          ClickMode="Press"/>
+                            <Image Grid.Row="0" Grid.Column="0" x:Name="PartImage" Visibility="Collapsed">
+                                <Image.Style>
+                                    <Style TargetType="Image" BasedOn="{StaticResource IconImageStyle}">
+                                        <Style.Triggers>
+                                            <!--
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeView}, Path=SelectedItem, Converter={StaticResource ObjectToTypeConv}}" Value="{x:Type local:Folder}">
+                                                <Setter Property="Source" Value="/imageres_5_blue.ico"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeView}, Path=SelectedItem, Converter={StaticResource ObjectToTypeConv}}" Value="{x:Type local:Receipt}">
+                                                <Setter Property="Source" Value="/imageres_5_blue.ico"/>
+                                            </DataTrigger>
+                                            -->
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorType={x:Type TreeViewItem}},Path=DataContext.Type}" Value="{x:Type treeViewControl:Folder}">
+                                                <Setter Property="Source" Value="pack://application:,,,/TreeViewControl/Icons/CloseFolder.ico"/>
+                                            </DataTrigger>
+
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorType={x:Type TreeViewItem}},Path=DataContext.Type}" Value="{x:Type treeViewControl:Receipt}">
+                                                <Setter Property="Source" Value="pack://application:,,,/TreeViewControl/Icons/Receipt.ico"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Image.Style>
+                            </Image>
+
+                            <Border x:Name="PartBorder" Grid.Row="0" Grid.Column="1" CornerRadius="5">
+                                <ContentPresenter 
+                                    Margin="10 0 10 0" 
+                                    x:Name="PART_Header" 
+                                    ContentSource="Header" 
+                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalAlignment="Center">
+                                </ContentPresenter>
+                            </Border>
+                            <ItemsPresenter x:Name="ItemsHost" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="False">
+                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <Trigger Property="HasItems" Value="False">
+                                <Setter TargetName="PartExpander" Property="Visibility" Value="Hidden"/>
+                                <Setter TargetName="PartImage" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" TargetName="PartBorder" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid x:Name="LayoutRoot">
+
+        <Grid.Resources>
+            <treeViewControl:BindingProxy x:Key="Proxy" Data="{Binding}" />
+        </Grid.Resources>
+
+        <TreeView Name="TreeViewElement" ItemsSource="{Binding Folders}" ItemContainerStyle="{StaticResource TreeViewStyle}" AllowDrop="True">
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="MouseDoubleClick">
+                    <i:InvokeCommandAction Command="{Binding ControlMouseDoubleClickCommand}" CommandParameter="{Binding Path=SelectedItem, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}}" />
+                </i:EventTrigger>
+                <i:EventTrigger EventName="SelectedItemChanged">
+                    <i:InvokeCommandAction Command="{Binding ControlSelectedItemChangedCommand}" CommandParameter="{Binding Path=SelectedItem, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}}" />
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+            <TreeView.InputBindings>
+                <KeyBinding Key="F2" Command="{Binding ControlRenameFolderCommand}" CommandParameter="{Binding Path=SelectedItem, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}}"/>
+                <KeyBinding Key="Enter" Command="{Binding ControlSaveChangesCommand}" CommandParameter="{Binding Path=SelectedItem, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}}"/>
+            </TreeView.InputBindings>
+            <TreeView.Resources>
+                <HierarchicalDataTemplate DataType="{x:Type treeViewControl:Folder}" ItemsSource="{Binding Children}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Name}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsEdit}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsEdit}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+
+                        <TextBox Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" >
+                            <!--
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Enter" Command="{Binding DataContext.ControlSaveChangesCommand, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type TreeView}}}" 
+                                            CommandParameter="{Binding Path=SelectedItem, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}}"/>
+                            </TextBox.InputBindings>
+                            -->
+                            <TextBox.Style>
+                                <Style TargetType="TextBox">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsEdit}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsEdit}" Value="False">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <!--
+                                        <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type TreeViewItem}}}" Value="False">
+                                            <Setter Property="Background" Value="{Binding Path=Background, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeViewItem}}}"/>
+                                            <Setter Property="Foreground" Value="{Binding Path=Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeViewItem}}}"/>
+                                        </DataTrigger>
+                                        -->
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+                        <!--
+                        <TextBlock Margin="10,0,0,0" Text="{Binding Path=SelectedValue, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type TreeView}}}" Foreground="Blue"/>
+                        -->
+                        <StackPanel Orientation="Horizontal" Margin="5 0 5 0">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Folders.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Text="[ folders: " Foreground="Blue" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Folders.Count}" Foreground="Blue" VerticalAlignment="Center"/>
+                            <TextBlock Text=" ]" Foreground="Blue" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="5 0 5 0">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Receipts.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Text="[ receipts :" Foreground="Blue" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Receipts.Count}" Foreground="Blue" VerticalAlignment="Center"/>
+                            <TextBlock Text=" ]" Foreground="Blue" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Добавить папку" Command="{Binding Data.ControlAddFolderCommand, Source={StaticResource Proxy}}" 
+                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
+                                <MenuItem Header="Удалить папку" Command="{Binding Data.ControlDeleteFolderCommand, Source={StaticResource Proxy}}"
+                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
+                                <MenuItem Header="Переименовать папку" Command="{Binding Data.ControlRenameFolderCommand, Source={StaticResource Proxy}}"
+                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
+                                <MenuItem Header="Добавить рецепт" Command="{Binding Data.ControlAddReceiptCommand, Source={StaticResource Proxy}}"
+                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
+                            </ContextMenu>
+                        </StackPanel.ContextMenu>
+                    </StackPanel>
+                </HierarchicalDataTemplate>
+                <DataTemplate DataType="{x:Type treeViewControl:Receipt}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Name}"/>
+                        <StackPanel.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Добавить рецепт" Command="{Binding Data.ControlAddReceiptCommand, Source={StaticResource Proxy}}"
+                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
+                                <MenuItem Header="Удалить рецепт" Command="{Binding Data.ControlDeleteReceiptCommand, Source={StaticResource Proxy}}"
+                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
+                            </ContextMenu>
+                        </StackPanel.ContextMenu>
+                    </StackPanel>
+                </DataTemplate>
+            </TreeView.Resources>
+        </TreeView>
+    </Grid>
+</UserControl>
