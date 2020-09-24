@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,11 +18,18 @@ namespace TreeViewControlWpfApp.TreeViewControl
     {
         public ICommand ControlMouseDoubleClickCommand {get; set;}
         public ICommand ControlSelectedItemChangedCommand {get; set;}
+
         public ICommand ControlAddFolderCommand {get; set;}
-        public ICommand ControlDeleteFolderCommand {get; set;}
+        public ICommand ControlAddReceiptCommand { get; set; }
+
+        public ICommand ControlDeleteCommand { get; set; }
+        public ICommand ControlDeleteFolderCommand {get; set; }
+        public ICommand ControlDeleteReceiptCommand { get; set; }
+
+        public ICommand ControlRenameCommand { get; set; }
         public ICommand ControlRenameFolderCommand {get; set;}
-        public ICommand ControlAddReceiptCommand {get; set;}
-        public ICommand ControlDeleteReceiptCommand {get; set;}
+        public ICommand ControlRenameReceiptCommand { get; set; }
+
         public ICommand ControlSaveChangesCommand {get; set;}
 
         public ObservableCollection<Folder> Folders {get; set;}
@@ -57,7 +65,7 @@ namespace TreeViewControlWpfApp.TreeViewControl
 
         public static readonly DependencyProperty ReceiptsProperty =
             DependencyProperty.Register("Receipts", typeof(ObservableCollection<ReceiptItems>), typeof(TreeViewControl),
-                new PropertyMetadata(null, OnReceiptsChanged));
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,OnReceiptsChanged));
 
         public ObservableCollection<ReceiptItems> Receipts
         {
@@ -73,16 +81,24 @@ namespace TreeViewControlWpfApp.TreeViewControl
 
         private void OnReceiptsChanged(DependencyPropertyChangedEventArgs e)
         {
+            Receipts.CollectionChanged += ReceiptsOnCollectionChanged;
             var items = e.NewValue as ObservableCollection<ReceiptItems>;
             SetFolders(items);
+        }
+
+        private void ReceiptsOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            SetFolders(Receipts);
         }
 
         private void SetFolders(IReadOnlyCollection<ReceiptItems> items)
         {
             if (items == null) return;
+
+            Folders.Clear();
             foreach (var item in items)
             {
-                var paths = item.Path.Split('\\');
+                var paths = item.Path?.Split('\\') ?? new string[]{};
 
                 Folder folder = null;
                 Folder parent = null;
@@ -219,10 +235,16 @@ namespace TreeViewControlWpfApp.TreeViewControl
             ControlSelectedItemChangedCommand = new DelegateCommand<object>(OnSelectedItemChanged);
 
             ControlAddFolderCommand = new DelegateCommand<object>(OnAddFolder);
+            ControlAddReceiptCommand = new DelegateCommand<object>( OnAddReceipt );
+
+            ControlDeleteCommand = new DelegateCommand<object>(OnDeleteNode);
             ControlDeleteFolderCommand = new DelegateCommand<object>(OnDeleteFolder);
+            ControlDeleteReceiptCommand = new DelegateCommand<object>( OnDeleteReceipt );
+
+            ControlRenameCommand = new DelegateCommand<object>(OnRenameNode);
             ControlRenameFolderCommand = new DelegateCommand<object>(OnRenameFolder);
-            ControlAddReceiptCommand = new DelegateCommand<object>(OnAddReceipt);
-            ControlDeleteReceiptCommand = new DelegateCommand<object>(OnDeleteReceipt);
+            ControlRenameReceiptCommand = new DelegateCommand<object>(OnRenameReceipt);
+
             ControlSaveChangesCommand = new DelegateCommand<object>(OnSaveChanges);
         }
 
@@ -232,6 +254,34 @@ namespace TreeViewControlWpfApp.TreeViewControl
 
             folder.IsExpanded = true;
             folder.AddFolder();
+        }
+
+        private void OnAddReceipt( object obj ) {
+            Folder currentFolder = null;
+            if ( obj is Receipt receipt ) {
+                currentFolder = receipt.Parent;
+            }
+            if ( obj is Folder folder ) {
+                folder.IsExpanded = true;
+                currentFolder = folder;
+            }
+            if ( currentFolder == null ) return;
+            var createdReceipt = currentFolder.AddReceipt();
+            AddReceiptCommand?.Execute( createdReceipt.Item );
+        }
+
+        private void OnDeleteNode(object obj)
+        {
+            if (obj is Folder)
+            {
+                OnDeleteFolder(obj);
+                return;
+            }
+            if (obj is Receipt)
+            {
+                OnDeleteReceipt(obj);
+                return;
+            }
         }
 
         private void OnDeleteFolder(object obj)
@@ -246,7 +296,25 @@ namespace TreeViewControlWpfApp.TreeViewControl
                 folder.Parent?.Delete(folder);
             }
             var deleted = GetReceiptItems(folder);
-            DeleteReceiptCommand.Execute(deleted);
+            DeleteReceiptCommand?.Execute(deleted);
+        }
+
+        private void OnDeleteReceipt( object obj ) {
+            if ( !( obj is Receipt receipt ) ) return;
+            var folder = receipt.Parent;
+            folder.Delete( receipt );
+            DeleteReceiptCommand?.Execute( new List<ReceiptItems> { receipt.Item } );
+        }
+
+        private void OnRenameNode( object obj ) {
+            if ( obj is Folder ) {
+                OnRenameFolder( obj );
+                return;
+            }
+            if ( obj is Receipt ) {
+                OnRenameReceipt( obj );
+                return;
+            }
         }
 
         private void OnRenameFolder(object obj)
@@ -258,29 +326,12 @@ namespace TreeViewControlWpfApp.TreeViewControl
             folder.IsEdit = true;
         }
 
-        private void OnAddReceipt(object obj)
-        {
-            Folder currentFolder = null;
-            if (obj is Receipt receipt)
-            {
-                currentFolder = receipt.Parent;
-            }
-            if (obj is Folder folder)
-            {
-                folder.IsExpanded = true;
-                currentFolder = folder;
-            }
-            if (currentFolder == null) return;
-            var createdReceipt = currentFolder.AddReceipt();
-            AddReceiptCommand.Execute(createdReceipt.Item);
-        }
+        private void OnRenameReceipt( object obj ) {
+            if ( !( obj is Receipt receipt ) ) return;
 
-        private void OnDeleteReceipt(object obj)
-        {
-            if (!(obj is Receipt receipt)) return;
-            var folder = receipt.Parent;
-            folder.Delete(receipt);
-            DeleteReceiptCommand.Execute(new List<ReceiptItems> {receipt.Item});
+            ControlSelectedReceipt = receipt;
+            receipt.IsSelected = true;
+            receipt.IsEdit = true;
         }
 
         private void OnSaveChanges(object obj)
@@ -291,9 +342,9 @@ namespace TreeViewControlWpfApp.TreeViewControl
                 folder.IsSelected = true;
                 folder.IsEdit = false;
 
-                UpdateReceiptItems( folder );
+                UpdateReceiptItems(folder);
                 var changed = GetReceiptItems(folder);
-                SaveChangesReceiptCommand.Execute(changed);
+                SaveChangesReceiptCommand?.Execute(changed);
             }
             if (obj is Receipt receipt)
             {
@@ -301,8 +352,9 @@ namespace TreeViewControlWpfApp.TreeViewControl
                 currentFolder.IsSelected = true;
                 currentFolder.IsEdit = false;
 
+                receipt.Item.Name = receipt.Name;
                 receipt.Item.Path = BaseClass.GetPath(currentFolder);
-                SaveChangesReceiptCommand.Execute(new List<ReceiptItems> {receipt.Item});
+                SaveChangesReceiptCommand?.Execute(new List<ReceiptItems> {receipt.Item});
             }
         }
 
@@ -325,7 +377,7 @@ namespace TreeViewControlWpfApp.TreeViewControl
             {
                 ControlSelectedReceipt = receipt;
                 SelectedReceipt = receipt.Item;
-                SelectedReceiptChangedCommand.Execute(receipt.Item);
+                SelectedReceiptChangedCommand?.Execute(receipt.Item);
                 return;
             }
             if (obj is Folder folder)
@@ -386,10 +438,11 @@ namespace TreeViewControlWpfApp.TreeViewControl
                     !(Math.Abs(currentPosition.Y - _startPoint.Y) > SystemParameters.MinimumVerticalDragDistance))
                     return;
                 _draggedItem = TreeViewElement.SelectedItem;
-                if (_draggedItem == null || 
+                if (_draggedItem == null ||
                     _draggedItem is Receipt receipt && receipt.IsEdit ||
                     _draggedItem is Folder folder && folder.IsEdit) return;
-                var finalDropEffect = DragDrop.DoDragDrop(TreeViewElement, TreeViewElement.SelectedValue, DragDropEffects.Move);
+                var finalDropEffect =
+                    DragDrop.DoDragDrop(TreeViewElement, TreeViewElement.SelectedValue, DragDropEffects.Move);
                 //Checking target is not null and item is dragging(moving)
                 if (finalDropEffect != DragDropEffects.Move || _targetItem == null) return;
                 // A Move drop was accepted
@@ -459,8 +512,8 @@ namespace TreeViewControlWpfApp.TreeViewControl
                 targetFolder.IsExpanded = true;
                 targetFolder.Add(receipt);
 
-                receipt.Item.Path = BaseClass.GetPath( targetFolder );
-                SaveChangesReceiptCommand.Execute( new List<ReceiptItems> { receipt.Item } );
+                receipt.Item.Path = BaseClass.GetPath(targetFolder);
+                SaveChangesReceiptCommand?.Execute(new List<ReceiptItems> {receipt.Item});
                 return;
             }
             if (sourceItem is Folder folder)
@@ -475,9 +528,9 @@ namespace TreeViewControlWpfApp.TreeViewControl
                 targetFolder.IsExpanded = true;
                 targetFolder.Add(folder);
 
-                UpdateReceiptItems( folder );
+                UpdateReceiptItems(folder);
                 var changed = GetReceiptItems(folder);
-                SaveChangesReceiptCommand.Execute( changed );
+                SaveChangesReceiptCommand?.Execute(changed);
             }
         }
 

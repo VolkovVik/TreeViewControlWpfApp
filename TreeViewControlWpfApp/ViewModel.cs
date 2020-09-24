@@ -117,11 +117,52 @@ namespace TreeViewControlWpfApp
         private int _current = 0;
         private void ExecuteMethod()
         {
-            if (_current > Products.Count - 1)
+            //if (_current > Products.Count - 1)
+            //{
+            //    _current = 0;
+            //}
+            //SelectedReceiptItem = Products[_current++];
+
+            if (Products.Count > 0)
             {
-                _current = 0;
+                Products.Clear();
+            } else
+            {
+                Products.AddRange(new []{
+                new ReceiptItems {Name = "Receipt1", Path = "111"},
+                new ReceiptItems {Name = "Receipt2", Path = "111"},
+                new ReceiptItems {Name = "Receipt3", Path = "111"},
+                new ReceiptItems {Name = "Receipt4", Path = "111\\222"},
+                new ReceiptItems {Name = "Receipt5", Path = "111\\222"},
+                new ReceiptItems {Name = "Receipt6", Path = "111\\222"},
+                new ReceiptItems {Name = "Receipt7", Path = "111\\333"},
+                new ReceiptItems {Name = "Receipt8", Path = "111\\333"},
+                new ReceiptItems {Name = "Receipt9", Path = "111\\333"},
+                new ReceiptItems {Name = "Receipt10", Path = "111\\222\\333\\444"},
+                new ReceiptItems {Name = "Receipt11", Path = "111\\222\\333\\444"},
+                new ReceiptItems {Name = "Receipt12", Path = "111\\222\\333\\444"},
+                new ReceiptItems {Name = "Receipt13", Path = "111\\222\\333\\444\\555"},
+                new ReceiptItems {Name = "Receipt14", Path = "111\\222\\333\\444\\555"},
+                new ReceiptItems {Name = "Receipt15", Path = "111\\222\\333\\444\\555"},
+
+
+                new ReceiptItems {Name = "Receipt16", Path = "211"},
+                new ReceiptItems {Name = "Receipt17", Path = "211"},
+                new ReceiptItems {Name = "Receipt18", Path = "211"},
+                new ReceiptItems {Name = "Receipt19", Path = "211\\222"},
+                new ReceiptItems {Name = "Receipt20", Path = "211\\222"},
+                new ReceiptItems {Name = "Receipt21", Path = "211\\222"},
+                new ReceiptItems {Name = "Receipt22", Path = "211\\222\\333"},
+                new ReceiptItems {Name = "Receipt23", Path = "211\\222\\333"},
+                new ReceiptItems {Name = "Receipt24", Path = "211\\222\\333"},
+                new ReceiptItems {Name = "Receipt25", Path = "211\\222\\333\\444"},
+                new ReceiptItems {Name = "Receipt26", Path = "211\\222\\333\\444"},
+                new ReceiptItems {Name = "Receipt27", Path = "211\\222\\333\\444"},
+                new ReceiptItems {Name = "Receipt28", Path = "211\\222\\333\\444\\555"},
+                new ReceiptItems {Name = "Receipt29", Path = "211\\222\\333\\444\\555"},
+                new ReceiptItems {Name = "Receipt30", Path = "211\\222\\333\\444\\555"}
+            } );
             }
-            SelectedReceiptItem = Products[_current++];
         }
     }
 }

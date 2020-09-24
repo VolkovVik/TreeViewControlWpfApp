@@ -18,7 +18,7 @@
             <Setter Property="MaxWidth" Value="40"/>
             <Setter Property="MaxHeight" Value="40"/>
         </Style>
-        
+
         <Style x:Key="ToggleButtonStyle" TargetType="{x:Type ToggleButton}">
             <Setter Property="Template">
                 <Setter.Value>
@@ -136,7 +136,10 @@
                 </i:EventTrigger>
             </i:Interaction.Triggers>
             <TreeView.InputBindings>
-                <KeyBinding Key="F2" Command="{Binding ControlRenameFolderCommand}" CommandParameter="{Binding Path=SelectedItem, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}}"/>
+                <KeyBinding Key="F2" Command="{Binding ControlRenameCommand}" CommandParameter="{Binding Path=SelectedItem, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}}"/>
+                <KeyBinding Key="F3" Command="{Binding ControlAddFolderCommand}" CommandParameter="{Binding Path=SelectedItem, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}}"/>
+                <KeyBinding Key="F4" Command="{Binding ControlAddReceiptCommand}" CommandParameter="{Binding Path=SelectedItem, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}}"/>
+                <KeyBinding Key="Delete" Command="{Binding ControlDeleteCommand}" CommandParameter="{Binding Path=SelectedItem, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}}"/>
                 <KeyBinding Key="Enter" Command="{Binding ControlSaveChangesCommand}" CommandParameter="{Binding Path=SelectedItem, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeView}}}"/>
             </TreeView.InputBindings>
             <TreeView.Resources>
@@ -216,13 +219,13 @@
                         </StackPanel>
                         <StackPanel.ContextMenu>
                             <ContextMenu>
-                                <MenuItem Header="Добавить папку" Command="{Binding Data.ControlAddFolderCommand, Source={StaticResource Proxy}}" 
+                                <MenuItem Header="Добавить рецепт [F4]" Command="{Binding Data.ControlAddReceiptCommand, Source={StaticResource Proxy}}"
                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
-                                <MenuItem Header="Удалить папку" Command="{Binding Data.ControlDeleteFolderCommand, Source={StaticResource Proxy}}"
+                                <MenuItem Header="Добавить папку [F3]" Command="{Binding Data.ControlAddFolderCommand, Source={StaticResource Proxy}}" 
                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
-                                <MenuItem Header="Переименовать папку" Command="{Binding Data.ControlRenameFolderCommand, Source={StaticResource Proxy}}"
+                                <MenuItem Header="Удалить [Del]" Command="{Binding Data.ControlDeleteFolderCommand, Source={StaticResource Proxy}}"
                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
-                                <MenuItem Header="Добавить рецепт" Command="{Binding Data.ControlAddReceiptCommand, Source={StaticResource Proxy}}"
+                                <MenuItem Header="Переименовать [F2]" Command="{Binding Data.ControlRenameFolderCommand, Source={StaticResource Proxy}}"
                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
                             </ContextMenu>
                         </StackPanel.ContextMenu>
@@ -230,12 +233,42 @@
                 </HierarchicalDataTemplate>
                 <DataTemplate DataType="{x:Type treeViewControl:Receipt}">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding Name}"/>
+                        <TextBlock Text="{Binding Name}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsEdit}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsEdit}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBox Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" >
+                            <TextBox.Style>
+                                <Style TargetType="TextBox">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsEdit}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsEdit}" Value="False">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+
                         <StackPanel.ContextMenu>
                             <ContextMenu>
-                                <MenuItem Header="Добавить рецепт" Command="{Binding Data.ControlAddReceiptCommand, Source={StaticResource Proxy}}"
+                                <MenuItem Header="Добавить рецепт [F4]" Command="{Binding Data.ControlAddReceiptCommand, Source={StaticResource Proxy}}"
                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
-                                <MenuItem Header="Удалить рецепт" Command="{Binding Data.ControlDeleteReceiptCommand, Source={StaticResource Proxy}}"
+                                <MenuItem Header="Удалить [Del]" Command="{Binding Data.ControlDeleteReceiptCommand, Source={StaticResource Proxy}}"
+                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
+                                <MenuItem Header="Переименовать [F2]" Command="{Binding Data.ControlRenameReceiptCommand, Source={StaticResource Proxy}}"
                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
                             </ContextMenu>
                         </StackPanel.ContextMenu>
@@ -245,3 +278,4 @@
         </TreeView>
     </Grid>
 </UserControl>
+
